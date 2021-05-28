@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup, SoupStrainer
 import requests
+from .Node import And_Node, Or_Node
 
 headers = {
     'authority': 'www.amazon.com',
@@ -26,15 +27,16 @@ def find_courses():
     for link in container:
         try: 
             link = link.get('href')
-            if link[0] == '/' and link[-2].isdigit(): 
+            if link[0] == '/' and link[-2].isdigit():
                 link = 'https://www.bu.edu' + link
                 course_info.append(get_course_info(link))
         except:
             continue
     return course_info
 
+
 ####################################
-## [name, id, pre-requisites] ######
+#### [name, id, pre-requisites] ####
 ####################################
 def get_course_info(url):
     info = []
@@ -54,11 +56,65 @@ def get_course_info(url):
     info.append('')
     return info
 
-info= find_courses()
-for course in info:
-    print(course[2])
 
 
-def comprehension():
+####################################
+####################################
+'''
+def prereq_comprehension(prerequisite):
+    prerequisite = prerequisite.replace(' ', '').replace('or equivalent', '').replace('or consent of instructor', '')
     requirement = []
+    
+    if prerequisite == '' or prerequisite == 'approval of the Honors Committee':
+        return requirement
+    
+    curr_word_start_idx = 0
+    idx = 0
+    or_mode = False
+    while idx < len(prerequisite): 
+        print(prerequisite[idx])
+        if prerequisite[idx] == ',':
+            requirement.append(prerequisite[curr_word_start_idx: idx])
+            curr_word_start_idx = idx + 1
+        if prerequisite[idx] == ';':
+            requirement.append(prerequisite[curr_word_start_idx: idx])
+            curr_word_start_idx = idx + 1
+            or_mode = False
+        elif prerequisite[idx] == '.':
+            requirement.append(prerequisite[curr_word_start_idx: idx])
+            curr_word_start_idx = idx + 1
+            break
+        elif idx == len(prerequisite) - 1:
+            if prerequisite[idx].isdigit():
+                requirement.append(prerequisite[curr_word_start_idx: idx + 1])
+        elif prerequisite[idx].islower():
+            if prerequisite[idx] == 'a':
+                if prerequisite[idx - 1].isdigit(): 
+                    requirement.append(prerequisite[curr_word_start_idx: idx])
+                idx += 2
+                curr_word_start_idx = idx + 1
+            elif prerequisite[idx] == 'o':
+                if prerequisite[idx - 1].isdigit(): 
+                    requirement.append(prerequisite[curr_word_start_idx: idx])
+                if not or_mode:
+                    requirement = [requirement]
+                idx += 1
+                curr_word_start_idx = idx + 1
+                or_mode = True
+            elif prerequisite[idx] == 'r': #recommended
+                idx += 10
+                curr_word_start_idx = idx
+        idx += 1
     return requirement
+'''
+
+def prereq_comprehension(prerequisite):
+    prerequisite = prerequisite.split(';')
+    print(prerequisite)
+
+    for phrase in prerequisite:
+        if 'and' in phrase:
+            tree = Or_Node()
+
+print(prereq_comprehension('CASCS112, CASCS131, and CASCS132; or CASCS235 or CASCS237'))
+print(prereq_comprehension('CAS CS 108 or CAS CS 111; CAS CS 132 or CAS MA 242 or CAS MA 442;'))
